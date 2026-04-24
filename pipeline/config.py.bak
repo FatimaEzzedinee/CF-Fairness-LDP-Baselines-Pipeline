@@ -1,0 +1,122 @@
+"""
+config.py — Global constants and paths for the Law School fairness/privacy pipeline.
+
+All other modules import from here so that changing a value in one place
+propagates everywhere.
+
+Layout of the working directory
+--------------------------------
+New/
+├── ensemble_mia-main/          ← MIA attack implementations
+├── revisiting-the-comparator-main/  ← Law School data + mutatis-mutandis CFs
+└── pipeline/                   ← This package (main.py is the entry-point)
+
+Output artefacts are written to  New/pipeline_outputs/.
+"""
+
+import os
+
+# ---------------------------------------------------------------------------
+# Root paths
+# ---------------------------------------------------------------------------
+
+# Absolute path to the "New" parent directory (two levels up from this file)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+DATA_DIR   = os.path.join(BASE_DIR, "revisiting-the-comparator-main", "data")
+MIA_DIR    = os.path.join(BASE_DIR, "ensemble_mia-main")
+OUTPUT_DIR = os.path.join(BASE_DIR, "pipeline_outputs")
+
+# ---------------------------------------------------------------------------
+# Raw data files
+# ---------------------------------------------------------------------------
+
+LAWSCHOOL_CSV  = os.path.join(DATA_DIR, "LawSchool.csv")
+CF_DOMALE_CSV  = os.path.join(DATA_DIR, "cf_LawSchool_lev3_doMale.csv")
+CF_DOWHITE_CSV = os.path.join(DATA_DIR, "cf_LawSchool_lev3_doWhite.csv")
+
+# ---------------------------------------------------------------------------
+# Dataset feature schema
+# ---------------------------------------------------------------------------
+
+# Raw column names as they appear in LawSchool.csv (pipe-separated)
+RAW_FEATURE_COLS  = ["LSAT", "UGPA"]          # numeric predictors
+RAW_PROTECTED_SEX = "sex"                      # 'Male' / 'Female'
+RAW_PROTECTED_RACE = "race_nonwhite"           # 'White' / 'NonWhite'
+RAW_TARGET_COL    = "ZFYA"                     # continuous first-year GPA z-score
+
+# Encoded column names used throughout the pipeline
+SEX_ENC_COL  = "sex_enc"    # 0 = Male, 1 = Female
+RACE_ENC_COL = "race_enc"   # 0 = White, 1 = NonWhite
+TARGET_COL   = "pass"       # 1 if ZFYA >= 0, else 0
+
+# All model input features (order matters — kept consistent everywhere)
+FEATURE_COLS = ["LSAT", "UGPA", SEX_ENC_COL, RACE_ENC_COL]
+
+# Protected attribute used for fairness evaluation (sex by default)
+PROTECTED_COL     = SEX_ENC_COL
+PROTECTED_PRIV    = 0   # privileged group: Male
+PROTECTED_UNPRIV  = 1   # unprivileged group: Female
+
+# ---------------------------------------------------------------------------
+# Train / validation / test split
+# ---------------------------------------------------------------------------
+
+RANDOM_STATE = 42   # fixed seed — identical across ALL experiments
+TEST_SIZE    = 0.10  # 20 % test
+VAL_SIZE     = 0.10  # 10 % validation (fraction of full dataset)
+
+# ---------------------------------------------------------------------------
+# Model families
+# ---------------------------------------------------------------------------
+
+MODEL_FAMILIES = ["logistic_regression", "random_forest", "xgboost"]
+
+LR_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "max_iter": 1000,
+    "C": 1.0,
+    "solver": "lbfgs",
+}
+RF_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "n_estimators": 200,
+    "max_depth": 8,
+}
+XGB_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "n_estimators": 200,
+    "max_depth": 5,
+    "learning_rate": 0.1,
+    "use_label_encoder": False,
+    "eval_metric": "logloss",
+}
+
+# ---------------------------------------------------------------------------
+# Local Differential Privacy (LDP)
+# ---------------------------------------------------------------------------
+
+LDP_EPSILON = 1.0  # privacy budget ε for randomised response on sex_enc
+
+# ---------------------------------------------------------------------------
+# MIA evaluation
+# ---------------------------------------------------------------------------
+
+# Number of members (and equal non-members) used per MIA run
+MIA_MEMBER_SIZE     = 500
+MIA_NON_MEMBER_SIZE = 500
+
+# ---------------------------------------------------------------------------
+# NiCE counterfactual generation
+# ---------------------------------------------------------------------------
+
+# Max number of training points for which we generate NiCE CFs
+# (generating CFs for all ~14 k points is feasible but slow for large k)
+NICE_MAX_SAMPLES = 3000 #None #1000   # set to None to process all training points
+
+# ---------------------------------------------------------------------------
+# Visualisation output
+# ---------------------------------------------------------------------------
+
+FIGURE_DPI  = 360 #150
+FIGURE_EXT  = "png"   # saved figure format

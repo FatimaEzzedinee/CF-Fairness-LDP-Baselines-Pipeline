@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_ldp_eps3_eg_dp",
+  "family": "lr",
+  "model_name": "eg_dp_lr",
+  "metrics": {
+    "proximity": 0.1892289698605488,
+    "plausibility": 0.94,
+    "sparsity": 0.805
+  }
+}

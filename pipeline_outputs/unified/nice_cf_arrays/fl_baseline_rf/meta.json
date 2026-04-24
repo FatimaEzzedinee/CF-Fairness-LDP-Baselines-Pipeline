@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_baseline",
+  "family": "rf",
+  "model_name": "baseline_rf",
+  "metrics": {
+    "proximity": 0.07226045883940621,
+    "plausibility": 0.92,
+    "sparsity": 0.8175
+  }
+}

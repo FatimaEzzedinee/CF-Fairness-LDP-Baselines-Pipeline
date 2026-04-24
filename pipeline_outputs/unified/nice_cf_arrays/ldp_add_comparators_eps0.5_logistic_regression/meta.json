@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_add_comparators_eps0.5",
+  "family": "logistic_regression",
+  "model_name": "ldp_add_comparators_eps0.5_logistic_regression",
+  "metrics": {
+    "proximity": 0.20371255060728746,
+    "plausibility": 0.94,
+    "sparsity": 0.7975
+  }
+}

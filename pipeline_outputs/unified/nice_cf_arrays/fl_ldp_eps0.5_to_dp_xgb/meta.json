@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_ldp_eps0.5_to_dp",
+  "family": "xgb",
+  "model_name": "to_dp_xgb",
+  "metrics": {
+    "proximity": 0.05438281601439496,
+    "plausibility": 0.98,
+    "sparsity": 0.8575
+  }
+}

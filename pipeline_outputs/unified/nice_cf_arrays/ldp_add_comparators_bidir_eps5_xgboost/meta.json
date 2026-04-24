@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_add_comparators_bidir_eps5",
+  "family": "xgboost",
+  "model_name": "ldp_add_comparators_bidir_eps5_xgboost",
+  "metrics": {
+    "proximity": 0.047521367521367514,
+    "plausibility": 0.96,
+    "sparsity": 0.8525
+  }
+}

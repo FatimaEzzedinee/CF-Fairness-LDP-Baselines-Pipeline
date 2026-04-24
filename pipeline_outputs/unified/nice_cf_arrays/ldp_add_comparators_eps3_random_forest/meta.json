@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_add_comparators_eps3",
+  "family": "random_forest",
+  "model_name": "ldp_add_comparators_eps3_random_forest",
+  "metrics": {
+    "proximity": 0.08617543859649122,
+    "plausibility": 0.9,
+    "sparsity": 0.8025
+  }
+}

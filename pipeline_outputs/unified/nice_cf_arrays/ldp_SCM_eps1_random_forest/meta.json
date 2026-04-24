@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_SCM_eps1",
+  "family": "random_forest",
+  "model_name": "ldp_SCM_eps1_random_forest",
+  "metrics": {
+    "proximity": 0.09597165991902834,
+    "plausibility": 0.9,
+    "sparsity": 0.8125
+  }
+}

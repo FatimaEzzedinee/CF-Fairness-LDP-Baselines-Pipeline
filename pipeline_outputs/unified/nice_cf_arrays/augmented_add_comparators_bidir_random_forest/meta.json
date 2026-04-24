@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_add_comparators_bidir",
+  "family": "random_forest",
+  "model_name": "augmented_add_comparators_bidir_random_forest",
+  "metrics": {
+    "proximity": 0.08886099865047234,
+    "plausibility": 0.9,
+    "sparsity": 0.8025
+  }
+}

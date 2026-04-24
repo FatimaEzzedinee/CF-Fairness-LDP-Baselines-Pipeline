@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_add_comparators",
+  "family": "random_forest",
+  "model_name": "augmented_add_comparators_random_forest",
+  "metrics": {
+    "proximity": 0.09011605937921727,
+    "plausibility": 0.9,
+    "sparsity": 0.81
+  }
+}

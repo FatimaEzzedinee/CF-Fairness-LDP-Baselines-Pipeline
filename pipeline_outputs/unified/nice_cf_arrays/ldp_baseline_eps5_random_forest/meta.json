@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_baseline_eps5",
+  "family": "random_forest",
+  "model_name": "ldp_baseline_eps5_random_forest",
+  "metrics": {
+    "proximity": 0.0708974358974359,
+    "plausibility": 0.94,
+    "sparsity": 0.815
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_baseline_eps5",
+  "family": "logistic_regression",
+  "model_name": "ldp_baseline_eps5_logistic_regression",
+  "metrics": {
+    "proximity": 0.2142163742690058,
+    "plausibility": 1.0,
+    "sparsity": 0.8
+  }
+}

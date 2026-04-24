@@ -1,0 +1,10 @@
+{
+  "scenario": "baseline",
+  "family": "xgboost",
+  "model_name": "baseline_xgboost",
+  "metrics": {
+    "proximity": 0.04782411156095367,
+    "plausibility": 0.96,
+    "sparsity": 0.8525
+  }
+}

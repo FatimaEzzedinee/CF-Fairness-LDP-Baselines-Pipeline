@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_add_comparators",
+  "family": "logistic_regression",
+  "model_name": "augmented_add_comparators_logistic_regression",
+  "metrics": {
+    "proximity": 0.2033495276653171,
+    "plausibility": 0.94,
+    "sparsity": 0.795
+  }
+}

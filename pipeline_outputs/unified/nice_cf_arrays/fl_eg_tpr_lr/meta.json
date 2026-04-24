@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_eg_tpr",
+  "family": "lr",
+  "model_name": "eg_tpr_lr",
+  "metrics": {
+    "proximity": 0.1818740440845704,
+    "plausibility": 0.9,
+    "sparsity": 0.8075
+  }
+}

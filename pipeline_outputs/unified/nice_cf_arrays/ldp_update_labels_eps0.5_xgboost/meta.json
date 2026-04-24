@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_update_labels_eps0.5",
+  "family": "xgboost",
+  "model_name": "ldp_update_labels_eps0.5_xgboost",
+  "metrics": {
+    "proximity": 0.05177058029689608,
+    "plausibility": 0.96,
+    "sparsity": 0.8525
+  }
+}

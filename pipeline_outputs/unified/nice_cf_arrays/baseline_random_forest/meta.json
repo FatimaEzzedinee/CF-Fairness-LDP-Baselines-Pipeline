@@ -1,0 +1,10 @@
+{
+  "scenario": "baseline",
+  "family": "random_forest",
+  "model_name": "baseline_random_forest",
+  "metrics": {
+    "proximity": 0.07226045883940621,
+    "plausibility": 0.92,
+    "sparsity": 0.8175
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_add_comparators_bidir",
+  "family": "logistic_regression",
+  "model_name": "augmented_add_comparators_bidir_logistic_regression",
+  "metrics": {
+    "proximity": 0.21303913630229418,
+    "plausibility": 1.0,
+    "sparsity": 0.8
+  }
+}

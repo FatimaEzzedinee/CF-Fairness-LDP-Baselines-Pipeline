@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_update_labels",
+  "family": "xgboost",
+  "model_name": "augmented_update_labels_xgboost",
+  "metrics": {
+    "proximity": 0.0494885290148448,
+    "plausibility": 0.96,
+    "sparsity": 0.8475
+  }
+}

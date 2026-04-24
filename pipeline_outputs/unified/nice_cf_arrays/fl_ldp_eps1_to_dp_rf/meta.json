@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_ldp_eps1_to_dp",
+  "family": "rf",
+  "model_name": "to_dp_rf",
+  "metrics": {
+    "proximity": 0.08011470985155195,
+    "plausibility": 0.94,
+    "sparsity": 0.815
+  }
+}

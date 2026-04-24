@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_add_comparators",
+  "family": "xgboost",
+  "model_name": "augmented_add_comparators_xgboost",
+  "metrics": {
+    "proximity": 0.04680296896086369,
+    "plausibility": 0.96,
+    "sparsity": 0.855
+  }
+}

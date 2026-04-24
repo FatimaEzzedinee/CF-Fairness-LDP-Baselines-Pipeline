@@ -1,0 +1,207 @@
+"""
+config.py — Global constants and paths for the COMPAS fairness/privacy pipeline.
+
+All other modules import from here so that changing a value in one place
+propagates everywhere.
+
+Layout of the working directory
+--------------------------------
+New/
+├── data/                          ← COMPAS dataset (downloaded from ProPublica)
+├── ensemble_mia-main/             ← MIA attack implementations
+└── pipeline/                      ← This package (main.py is the entry-point)
+
+Output artefacts are written to  New/pipeline_outputs/.
+"""
+
+import os
+
+# ---------------------------------------------------------------------------
+# Root paths
+# ---------------------------------------------------------------------------
+
+# Absolute path to the "New" parent directory (two levels up from this file)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+DATA_DIR   = os.path.join(BASE_DIR, "data")
+MIA_DIR    = os.path.join(BASE_DIR, "ensemble_mia-main")
+OUTPUT_DIR = os.path.join(BASE_DIR, "pipeline_outputs")
+
+# ---------------------------------------------------------------------------
+# Raw data files
+# ---------------------------------------------------------------------------
+
+COMPAS_CSV = os.path.join(DATA_DIR, "compas-scores-two-years.csv")
+
+DATASET_NAME = 'COMPAS'
+
+AUGMENTATION_METHOD = 'update_labels' # "update_labels", "add_comparators", "SCM"
+
+SCALED = False
+
+# ---------------------------------------------------------------------------
+# Dataset feature schema
+# ---------------------------------------------------------------------------
+
+# Encoded column names used throughout the pipeline
+RACE_ENC_COL          = "race_enc"              # 0=White (Caucasian), 1=Black (African-American)
+SEX_ENC_COL           = "sex_enc"               # 0=Male, 1=Female
+CHARGE_DEGREE_ENC_COL = "c_charge_degree_enc"   # 0=Misdemeanor(M), 1=Felony(F)
+TARGET_COL            = "recid"                 # 1=recidivated within 2 years, 0=did not
+
+# All model input features (order matters — kept consistent everywhere)
+# Indices:
+#   0 = age
+#   1 = priors_count
+#   2 = juv_fel_count
+#   3 = juv_misd_count
+#   4 = juv_other_count
+#   5 = c_charge_degree_enc  (binary: 0=M, 1=F)
+#   6 = sex_enc              (binary: 0=Male, 1=Female)
+#   7 = race_enc             (binary: 0=White, 1=Black)  <-- PROTECTED
+
+FEATURE_COLS = [
+    "age",
+    "priors_count",
+    "juv_fel_count",
+    "juv_misd_count",
+    "juv_other_count",
+    CHARGE_DEGREE_ENC_COL,
+    SEX_ENC_COL,
+    RACE_ENC_COL,
+]
+
+datasets_info = ["c_charge_degree_enc","priors_count","juv_fel_count","juv_misd_count", "juv_other_count"]
+
+# Protected attribute: RACE (Black vs White)
+PROTECTED_COL    = RACE_ENC_COL
+PROTECTED_PRIV   = 1   # privileged group:   White (Caucasian)
+PROTECTED_UNPRIV = 0   # unprivileged group: Black (African-American)
+
+# Human-readable group labels (used in fairness metrics keys and visualisations)
+GROUP_PRIV_LABEL   = "White"
+GROUP_UNPRIV_LABEL = "Black"
+
+sensitive_columns = {
+    "adult": ["sex", "race"],
+    "compas": ["sex_enc", "race_enc"],  # [0]=sex, [1]=race
+}
+
+#MAKE SURE TO MATCH SENSITIVE COLUMN
+PROTECTED = 'RACE'
+
+# Define values for Male and White for each dataset
+male_values = {
+    "adult": 1.0,
+    "compas": 1.0
+}
+female_values = {
+    "adult": 0.0,
+    "compas": 0.0
+}
+white_values = {
+    "adult": 4.0,
+    "compas": 1.0
+}
+
+# ---------------------------------------------------------------------------
+# Train / validation / test split
+# ---------------------------------------------------------------------------
+
+RANDOM_STATE = 3458    # fixed seed
+TEST_SIZE    = 0.1  # 10% test
+VAL_SIZE     = 0  # 10% validation
+
+# ---------------------------------------------------------------------------
+# Model families
+# ---------------------------------------------------------------------------
+
+MODEL_FAMILIES = ["logistic_regression", "random_forest", "xgboost"]
+
+LR_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "max_iter": 200,
+    "C": 1.0,
+    "solver": "lbfgs",
+}
+RF_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "n_estimators": 200,
+    "max_depth": 12,
+}
+XGB_PARAMS = {
+    "random_state": RANDOM_STATE,
+    "n_estimators": 200,
+    "max_depth": 15,
+    "learning_rate": 0.1,
+    #"objective": 'multi:softprob',
+    "eval_metric": "logloss",
+}
+
+# ---------------------------------------------------------------------------
+# Local Differential Privacy (LDP)
+# ---------------------------------------------------------------------------
+
+LDP_EPSILON  = 10.0              # legacy single-epsilon default (used by ldp.py)
+LDP_EPSILONS = [1, 3, 5]  # sweep values used by all pipelines (edit here)
+
+# ---------------------------------------------------------------------------
+# Augmentation quality controls
+# ---------------------------------------------------------------------------
+# These flags trade-off fairness improvement against accuracy loss.
+# All default to False / None (= original behaviour, no change).
+
+# update_labels: only relabel a non-white individual when their nearest white
+# neighbour is within this percentile of all pairwise distances.
+# None  → relabel everyone (original behaviour).
+# 50    → only relabel the closest 50% of non-white individuals.
+# Lower value = more conservative = less label noise = less accuracy loss.
+AUG_RELABEL_DISTANCE_PERCENTILE = 25     # None | int 1-99
+
+# update_labels: number of nearest white neighbours to consult when assigning a
+# label to a non-white row. K=1 reproduces the original (single-NN) behaviour;
+# K>1 averages over more neighbours so a single outlier cannot drive the label.
+# Used together with AUG_RELABEL_AGREEMENT_THRESHOLD to gate relabelling on
+# neighbour consensus.
+AUG_RELABEL_K_NEIGHBORS = 11 # 11              # int >= 1
+# update_labels: only relabel a non-white row when at least this fraction of its
+# K nearest white neighbours share the SAME label. Rows that fail the test keep
+# their original label (no relabelling), which removes noisy / ambiguous matches
+# without dropping the row entirely.
+# None       → no agreement requirement (original single-NN behaviour).
+# 0.6 .. 1.0 → require this fraction of K neighbours to agree on a label.
+# Only meaningful when AUG_RELABEL_K_NEIGHBORS > 1 (single neighbour always
+# agrees with itself).
+AUG_RELABEL_AGREEMENT_THRESHOLD = 0.8   # None | float in (0.5, 1.0]
+
+# add_comparators / SCM: drop synthetic CF rows that are identical to their
+# source row (no feature changed). These add nothing but noise.
+# False → keep all CFs (original behaviour).
+AUG_DROP_IDENTICAL_CFS = True         # True | False
+
+# add_comparators: when True, also generate the reverse direction
+# (white -> non-white) so each side has matched counterparts. Original
+# behaviour only added non-white -> white comparators, which leaves trees
+# with one-sided evidence and limits CF-fairness gain.
+# False → original (one-sided) behaviour.
+# True  → symmetric: append both non-white→white AND white→non-white flips.
+AUG_COMPARATORS_BIDIRECTIONAL = True   # True | False
+
+# All augmented scenarios: down-weight synthetic rows relative to original rows.
+# None  → equal weights (original behaviour, sklearn default).
+# 0.5   → synthetic rows count half as much as original rows during training.
+AUG_SYNTHETIC_WEIGHT = None           # None | float 0 < w < 1
+
+# ---------------------------------------------------------------------------
+# NiCE counterfactual generation
+# ---------------------------------------------------------------------------
+
+NICE_MAX_SAMPLES = 50    # max test-set points used as NiCE CF queries
+                         # set to 50 for fast testing, 2000 for full runs
+
+# ---------------------------------------------------------------------------
+# Visualisation output
+# ---------------------------------------------------------------------------
+
+FIGURE_DPI  = 360
+FIGURE_EXT  = "png"

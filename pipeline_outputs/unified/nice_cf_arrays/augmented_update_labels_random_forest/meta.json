@@ -1,0 +1,10 @@
+{
+  "scenario": "augmented_update_labels",
+  "family": "random_forest",
+  "model_name": "augmented_update_labels_random_forest",
+  "metrics": {
+    "proximity": 0.07389338731443995,
+    "plausibility": 0.9,
+    "sparsity": 0.815
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "ldp_update_labels_eps1",
+  "family": "logistic_regression",
+  "model_name": "ldp_update_labels_eps1_logistic_regression",
+  "metrics": {
+    "proximity": 0.21125506072874495,
+    "plausibility": 1.0,
+    "sparsity": 0.7975
+  }
+}

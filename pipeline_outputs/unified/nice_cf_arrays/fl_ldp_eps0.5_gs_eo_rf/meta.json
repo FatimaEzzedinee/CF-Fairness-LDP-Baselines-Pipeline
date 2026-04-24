@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_ldp_eps0.5_gs_eo",
+  "family": "rf",
+  "model_name": "gs_eo_rf",
+  "metrics": {
+    "proximity": 0.08401349527665318,
+    "plausibility": 0.94,
+    "sparsity": 0.81
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "fl_ldp_eps10_to_eo",
+  "family": "xgb",
+  "model_name": "to_eo_xgb",
+  "metrics": {
+    "proximity": 0.04782411156095367,
+    "plausibility": 0.96,
+    "sparsity": 0.8525
+  }
+}
