@@ -98,6 +98,13 @@ def _save(fig: plt.Figure, name: str, tight: bool = True) -> str:
     return path
 
 
+def _legend_if_present(ax: plt.Axes, **kwargs) -> None:
+    """Add a legend only when the axis has labeled artists."""
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(handles, labels, **kwargs)
+
+
 def _scenario_color(sc: str) -> str:
     # Exact match first
     if sc in PALETTE:
@@ -528,12 +535,20 @@ def plot_mia_precision_recall(mia_df: pd.DataFrame) -> str:
 
 def plot_privacy_gain_heatmap(mia_df: pd.DataFrame) -> str:
     """M5 — Privacy gain heatmap (scenario × model family) for both input types."""
+    # MIA uses "privacy_gain"; AIA uses "attribute_privacy_gain"
+    privacy_col = next(
+        (c for c in ("privacy_gain", "attribute_privacy_gain") if c in mia_df.columns),
+        None,
+    )
+    if privacy_col is None:
+        return ""
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
     for ax, itype in zip(axes, ["mm_cf", "nice_cf"]):
         df = mia_df[mia_df["input_type"] == itype]
         # Average privacy_gain across all attackers per (scenario, family)
-        pivot = (df.groupby(["scenario", "family"])["privacy_gain"]
+        pivot = (df.groupby(["scenario", "family"])[privacy_col]
                    .mean()
                    .unstack(fill_value=0.5))
         if pivot.empty:
@@ -677,7 +692,7 @@ def plot_combined_dashboard(
     scenarios = list(fairness_results.keys())
     families  = list(next(iter(fairness_results.values())).keys())
 
-    fig = plt.figure(figsize=(18, 12))
+    fig = plt.figure(figsize=(18, 12), constrained_layout=True)
     gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.45, wspace=0.35)
 
     # --- Panel 1: SPD per scenario/family ---
@@ -729,7 +744,7 @@ def plot_combined_dashboard(
     ax3.set_ylabel("CF Fairness Score")
     ax3.set_ylim(0, 1.05)
     ax3.set_title("Counterfactual Fairness", fontweight="bold", fontsize=10)
-    ax3.legend(fontsize=7)
+    _legend_if_present(ax3, fontsize=7)
 
     # --- Panel 4: MIA AUC (mm_cf, ensemble_mean) ---
     ax4 = fig.add_subplot(gs[1, 0])
@@ -754,7 +769,7 @@ def plot_combined_dashboard(
     ax4.set_ylabel("AUC-ROC")
     ax4.set_ylim(0.4, 1.0)
     ax4.set_title("MIA AUC (MM-CFs)", fontweight="bold", fontsize=10)
-    ax4.legend(fontsize=7)
+    _legend_if_present(ax4, fontsize=7)
 
     # --- Panel 5: MIA AUC (nice_cf, ensemble_mean) ---
     ax5 = fig.add_subplot(gs[1, 1])
@@ -779,7 +794,7 @@ def plot_combined_dashboard(
     ax5.set_ylabel("AUC-ROC")
     ax5.set_ylim(0.4, 1.0)
     ax5.set_title("MIA AUC (NiCE CFs)", fontweight="bold", fontsize=10)
-    ax5.legend(fontsize=7)
+    _legend_if_present(ax5, fontsize=7)
 
     # --- Panel 6: CF Proximity ---
     ax6 = fig.add_subplot(gs[1, 2])
@@ -799,12 +814,12 @@ def plot_combined_dashboard(
     ax6.set_xticklabels([SCENARIO_LABELS.get(sc, sc) for sc in scenarios], fontsize=8)
     ax6.set_ylabel("L1 Proximity (↓ better)")
     ax6.set_title("CF Proximity (NiCE)", fontweight="bold", fontsize=10)
-    ax6.legend(fontsize=7)
+    _legend_if_present(ax6, fontsize=7)
 
     fig.suptitle("Comprehensive Comparison Dashboard\n"
                  "(Baseline vs Augmented vs LDP-Augmented)",
                  fontsize=14, fontweight="bold")
-    return _save(fig, "X1_combined_dashboard")
+    return _save(fig, "X1_combined_dashboard", tight=False)
 
 
 # ---------------------------------------------------------------------------

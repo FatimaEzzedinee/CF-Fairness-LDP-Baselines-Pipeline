@@ -35,7 +35,7 @@ COMPAS_CSV = os.path.join(DATA_DIR, "compas-scores-two-years.csv")
 
 DATASET_NAME = 'COMPAS'
 
-AUGMENTATION_METHOD = 'update_labels' # "update_labels", "add_comparators", "SCM"
+AUGMENTATION_METHOD = "add_comparators" # 'update_labels' # "update_labels", "add_comparators", "SCM"
 
 SCALED = False
 
@@ -205,3 +205,9 @@ NICE_MAX_SAMPLES = 50    # max test-set points used as NiCE CF queries
 
 FIGURE_DPI  = 360
 FIGURE_EXT  = "png"
+
+
+# ---------------------------------------------------------------------------
+# attack configuration
+# ---------------------------------------------------------------------------
+ATTACKS = ["mia", "aia"]  # "mia", "aia"

@@ -20,15 +20,15 @@ PRIVACY BLOCK
   Step 7  Privacy + fairness: compare all previous + LDP variants
                               → save step7_fairness_all.csv
 
-  Step 8  MIA / NiCE CFs   : full MIA pipeline on key scenarios
-                              → save step8_mia.csv + step8_nice_quality.csv
+    Step 8  AIA / NiCE CFs   : full sensitive-attribute inference on key scenarios
+                                                            → save step8_aia.csv + step8_nice_quality.csv
 
 All CSVs land in  pipeline_outputs/unified/results/
 
 Usage
 -----
   python pipeline/unified_analysis.py                           # full run
-  python pipeline/unified_analysis.py --skip-mia --skip-nice   # fairness only
+    python pipeline/unified_analysis.py --skip-aia --skip-nice   # fairness only
   python pipeline/unified_analysis.py --methods SCM update_labels
   python pipeline/unified_analysis.py --ldp-epsilons 0.5 1.0
   python pipeline/unified_analysis.py --families lr rf
@@ -69,12 +69,14 @@ import pipeline.models            as ml
 import pipeline.fairness_metrics  as fm
 import pipeline.ldp               as ldp_mod
 import pipeline.mia_analysis      as mia_mod
+import pipeline.attribute_inference_attack as aia_mod
 import pipeline.nice_cf           as ncf
 from pipeline.data_preparation import augment_data
 
 _PROTECTED_IDX = FEATURE_COLS.index(PROTECTED_COL)
 
 ALL_AUG_METHODS   = ["SCM", "update_labels", "add_comparators", "add_comparators_bidir"]
+ATTACKS            = ["mia", "aia"]  # membership inference attack, attribute inference attack
 # "add_comparators_bidir" is a virtual method: it runs add_comparators with
 # the AUG_COMPARATORS_BIDIRECTIONAL config flag forced to True for that
 # scenario only (the one-sided "add_comparators" run forces it to False).
@@ -222,16 +224,25 @@ def _ldp_data_obj(data, X_train_ldp: np.ndarray):
 
 
 # ---------------------------------------------------------------------------
-# MIA helper
+# Attack helper
 # ---------------------------------------------------------------------------
 
-def _run_mia(scenarios: dict, data, nice_results: dict, verbose: bool) -> dict:
+def _run_attack(attack_type: str, training_sets: dict, families: list, scenarios: dict,
+                data, nice_results: dict, verbose: bool) -> dict:
     try:
+        if attack_type == "aia":
+            return aia_mod.run_attribute_inference_analysis(
+                training_sets=training_sets,
+                families=families,
+                data=data,
+                nice_cf_results=nice_results,
+                verbose=verbose,
+            )
         return mia_mod.run_mia_analysis(
             scenarios=scenarios, data=data,
             nice_cf_results=nice_results, verbose=verbose)
     except Exception as exc:
-        warnings.warn(f"[MIA] Failed: {exc}\n{traceback.format_exc()}")
+        warnings.warn(f"[attack:{attack_type}] Failed: {exc}\n{traceback.format_exc()}")
         return {}
 
 
@@ -242,6 +253,7 @@ def _run_mia(scenarios: dict, data, nice_results: dict, verbose: bool) -> dict:
 def run_unified_analysis(
     methods:           list  = ALL_AUG_METHODS,
     families:          list  = MODEL_FAMILIES,
+    attack_type:       str   = ATTACKS[1], # "aia",
     skip_mia:          bool  = False,
     skip_nice:         bool  = False,
     ldp_epsilons:      list  = _DEFAULT_EPSILONS,
@@ -262,11 +274,13 @@ def run_unified_analysis(
     methods  = methods  or ALL_AUG_METHODS
     families = families or MODEL_FAMILIES
     fl_fams  = fl_families or ["lr", "rf", "xgb"]
+    attack_families = sorted(set(families) | set(fl_fams))
     all_fairness_rows: list  = []
     all_metrics_rows:  list  = []
     all_nice_rows:     list  = []
     all_mia_rows:      list  = []
     all_scenarios:     dict  = {}   # accumulates every trained scenario
+    training_sets:     dict  = {}
 
     # =========================================================================
     # STEP 0  —  Data: load, split, fit SCM
@@ -307,6 +321,7 @@ def run_unified_analysis(
         "baseline", data.X_train_sc, data.y_train,
         data.X_test_sc, data.y_test, families=families, verbose=verbose)
     all_scenarios["baseline"] = sc_baseline
+    training_sets["baseline"] = (data.X_train_sc, data.y_train)
     all_metrics_rows += _metrics_rows({"baseline": sc_baseline},
                                        {"block": "fairness", "ldp_eps": None})
 
@@ -348,6 +363,7 @@ def run_unified_analysis(
                 data.X_test_sc, data.y_test, families=families, verbose=verbose)
             aug_scenarios[sc_name] = sm
             all_scenarios[sc_name] = sm
+            training_sets[sc_name] = (X_aug_sc, y_aug)
             all_metrics_rows += _metrics_rows(
                 {sc_name: sm},
                 {"block": "fairness", "ldp_eps": None, "aug_method": method})
@@ -380,6 +396,7 @@ def run_unified_analysis(
         fl_scenarios = _train_fairlearn(data, fl_fams, tag_prefix="fl", verbose=verbose)
         for sc_name, sm in fl_scenarios.items():
             all_scenarios[sc_name] = sm
+            training_sets[sc_name] = (data.X_train_sc, data.y_train)
             all_metrics_rows += _metrics_rows(
                 {sc_name: sm},
                 {"block": "fairness", "ldp_eps": None})
@@ -430,6 +447,7 @@ def run_unified_analysis(
             data.X_test_sc, data.y_test, families=families, verbose=verbose)
         ldp_scenarios[sc_name] = sm
         all_scenarios[sc_name]  = sm
+        training_sets[sc_name] = (X_train_ldp_sc, data.y_train)
         all_metrics_rows += _metrics_rows(
             {sc_name: sm},
             {"block": "ldp", "ldp_eps": eps, "aug_method": "none"})
@@ -466,6 +484,7 @@ def run_unified_analysis(
                     data.X_test_sc, data.y_test, families=families, verbose=verbose)
                 ldp_scenarios[sc_name] = sm
                 all_scenarios[sc_name]  = sm
+                training_sets[sc_name] = (X_aug_ldp_sc, y_aug_ldp)
                 all_metrics_rows += _metrics_rows(
                     {sc_name: sm},
                     {"block": "ldp", "ldp_eps": eps, "aug_method": method})
@@ -484,6 +503,7 @@ def run_unified_analysis(
             for sc_name, sm in fl_ldp.items():
                 ldp_scenarios[sc_name] = sm
                 all_scenarios[sc_name]  = sm
+                training_sets[sc_name] = (X_train_ldp_sc, data.y_train)
                 all_metrics_rows += _metrics_rows(
                     {sc_name: sm},
                     {"block": "ldp", "ldp_eps": eps, "aug_method": "fairlearn"})
@@ -506,7 +526,7 @@ def run_unified_analysis(
     _save_csv(pd.DataFrame(all_metrics_rows), "unified_model_metrics.csv")
 
     # =========================================================================
-    # STEP 8  —  MIA + NiCE CFs
+    # STEP 8  —  AIA + NiCE CFs
     # =========================================================================
     nice_results: dict = {}
     mia_results:  dict = {}
@@ -532,14 +552,21 @@ def run_unified_analysis(
             print("\n[STEP 8a] Skipped NiCE CF generation (--skip-nice).")
 
     if not skip_mia:
-        _banner("STEP 8b — Membership Inference Attack")
-        mia_results = _run_mia(all_scenarios, data, nice_results, verbose)
+        _banner("STEP 8b — {}".format(
+            "Attribute Inference Attack" if attack_type == "aia"
+            else "Membership Inference Attack"))
+        mia_results = _run_attack(attack_type, training_sets, attack_families,
+                                  all_scenarios, data, nice_results, verbose)
         if mia_results:
-            mia_df = mia_mod.mia_results_to_dataframe(mia_results)
+            if attack_type == "aia":
+                mia_df = aia_mod.aia_results_to_dataframe(mia_results)
+            else:
+                mia_df = mia_mod.aia_results_to_dataframe(mia_results)
+            _save_csv(mia_df, "step8_aia.csv")
             _save_csv(mia_df, "step8_mia.csv")
             all_mia_rows += mia_df.to_dict("records")
     else:
-        print("\n[STEP 8b] Skipped MIA analysis (--skip-mia).")
+        print("\n[STEP 8b] Skipped AIA analysis (--skip-aia/--skip-mia).")
 
     # =========================================================================
     # Build unified comparison summary
@@ -563,6 +590,7 @@ def run_unified_analysis(
     _save_csv(summary, "unified_comparison_summary.csv")
 
     if not unified_mia.empty:
+        _save_csv(unified_mia, "unified_aia.csv")
         _save_csv(unified_mia, "unified_mia.csv")
     if not unified_nice.empty:
         _save_csv(unified_nice, "unified_nice_quality.csv")
@@ -579,6 +607,7 @@ def run_unified_analysis(
         "fairness_step3":   fair_step3,
         "fairness_step5":   fair_step5,
         "nice_cf":          nice_results,
+        "aia":              mia_results,
         "mia":              mia_results,
         "summary":          summary,
         "unified_fairness": unified_fairness,
@@ -606,7 +635,7 @@ def _build_summary(unified_fairness: pd.DataFrame,
                                                  no scenario is dropped)
       * Step 8a NiCE CF quality               -> flip_rate, proximity,
                                                  plausibility, sparsity
-      * Step 8b MIA on NiCE CFs               -> mia_auc_nice_cf,
+    * Step 8b AIA on NiCE CFs               -> mia_auc_nice_cf,
                                                  mia_adv_nice_cf (best
                                                  attacker per scenario/family)
 
@@ -750,6 +779,8 @@ if __name__ == "__main__":
     parser.add_argument("--methods", nargs="+", default=None,
                         help="Augmentation methods (SCM, update_labels, "
                              "add_comparators, add_comparators_bidir).")
+    parser.add_argument("--attack-type", choices=["mia", "aia"], default="aia",
+                        help="Choose the attack family for step 8.")
     parser.add_argument("--families", nargs="+",
                         choices=["logistic_regression", "random_forest", "xgboost",
                                  "lr", "rf", "xgb"],
@@ -759,6 +790,7 @@ if __name__ == "__main__":
                         default=_DEFAULT_EPSILONS,
                         help=f"LDP epsilon values (default: {_DEFAULT_EPSILONS}).")
     parser.add_argument("--skip-mia",  action="store_true", help="Skip MIA.")
+    parser.add_argument("--skip-aia",  action="store_true", help="Skip AIA.")
     parser.add_argument("--skip-nice", action="store_true", help="Skip NiCE CFs.")
     parser.add_argument("--no-fairlearn", action="store_true",
                         help="Skip fairlearn baselines.")
@@ -776,8 +808,9 @@ if __name__ == "__main__":
     run_unified_analysis(
         methods            = methods,
         families           = families_norm,
+        attack_type        = args.attack_type,
         ldp_epsilons       = args.ldp_epsilons,
-        skip_mia           = args.skip_mia,
+        skip_mia           = (args.skip_aia or args.skip_mia),
         skip_nice          = args.skip_nice,
         include_fairlearn  = not args.no_fairlearn,
         fl_families        = args.fl_families,
